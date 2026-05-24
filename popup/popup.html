@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Tools — Media Control Toolkit</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+    <header class="header">
+      <div class="header-brand">
+        <img src="../assets/logo.svg" alt="My Tools Logo" class="header-logo" />
+        <div class="header-text">
+          <span class="header-title">My Tools</span>
+          <span class="header-subtitle">Media Control Toolkit</span>
+        </div>
+      </div>
+      <div class="header-status" id="statusDot" title="Extension active"></div>
+      <button
+        class="theme-toggle-btn"
+        id="themeToggleBtn"
+        title="Theme Settings"
+        aria-label="Toggle theme panel"
+      >
+        <svg
+          id="themeIcon"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          width="15"
+          height="15"
+        >
+          <path
+            d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 14.5A6.5 6.5 0 0110 3.5v13z"
+          />
+        </svg>
+      </button>
+    </header>
+
+    <!-- ══ THEME PANEL ═════════════════════════════════════════════════ -->
+    <div class="theme-panel" id="themePanel" aria-hidden="true">
+      <div class="theme-panel-header">
+        <span class="theme-panel-title">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="13">
+            <path
+              d="M10 2a8 8 0 100 16A8 8 0 0010 2zm0 14.5A6.5 6.5 0 0110 3.5v13z"
+            />
+          </svg>
+          Appearance
+        </span>
+        <span class="theme-site-badge" id="themeSiteBadge"></span>
+      </div>
+      <div class="theme-options">
+        <button
+          class="theme-option"
+          data-theme="system"
+          id="themeOptSystem"
+          title="Follow system preference"
+        >
+          <span class="theme-option-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+              <path
+                fill-rule="evenodd"
+                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </span>
+          <span class="theme-option-label">System</span>
+          <span class="theme-option-check">✓</span>
+        </button>
+        <button
+          class="theme-option"
+          data-theme="light"
+          id="themeOptLight"
+          title="Light mode"
+        >
+          <span class="theme-option-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16">
+              <path
+                fill-rule="evenodd"
+                d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </span>
+          <span class="theme-option-label">Light</span>
+          <span class="theme-option-check">✓</span>
+        </button>
+        <button
+          class="theme-option"
+          data-theme="dark"
+          id="themeOptDark"
+          title="Dark mode"
+        >
+          <span class="theme-option-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16">
+              <path
+                d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+              />
+            </svg>
+          </span>
+          <span class="theme-option-label">Dark</span>
+          <span class="theme-option-check">✓</span>
+        </button>
+        <button
+          class="theme-option"
+          data-theme="invert"
+          id="themeOptInvert"
+          title="Color invert"
+        >
+          <span class="theme-option-icon">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="16">
+              <path
+                d="M10 3a7 7 0 100 14A7 7 0 0010 3zm0 12.5V4.5a5.5 5.5 0 010 11z"
+              />
+            </svg>
+          </span>
+          <span class="theme-option-label">Invert</span>
+          <span class="theme-option-check">✓</span>
+        </button>
+      </div>
+      <div class="theme-auto-row">
+        <label class="theme-auto-label">
+          <input type="checkbox" id="themeAutoSite" />
+          <span class="theme-auto-check-box"></span>
+          Remember for this site
+        </label>
+      </div>
+    </div>
+    <div class="theme-panel-backdrop" id="themePanelBackdrop"></div>
+
+    <!-- ══ TABS ════════════════════════════════════════════════════════ -->
+    <nav class="tabs" role="tablist">
+      <button
+        class="tab active"
+        data-tab="controls"
+        role="tab"
+        aria-selected="true"
+      >
+        Controls
+      </button>
+      <button class="tab" data-tab="scroll" role="tab" aria-selected="false">
+        Scroll
+      </button>
+      <button class="tab" data-tab="media" role="tab" aria-selected="false">
+        Media
+      </button>
+      <button class="tab" data-tab="cookies" role="tab" aria-selected="false">
+        Cookies
+      </button>
+      <button class="tab" data-tab="privacy" role="tab" aria-selected="false">
+        Privacy
+      </button>
+    </nav>
+
+    <main class="content">
+      <!-- ══ TAB: CONTROLS ══════════════════════════════════════════════ -->
+      <section class="tab-panel active" id="tab-controls">
+        <!-- Volume Card -->
+        <div class="card" id="volumeCard">
+          <div class="card-header">
+            <div class="card-icon icon-volume">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  d="M10 3.22L6.4 6.5H3a1 1 0 00-1 1v5a1 1 0 001 1h3.4L10 16.78V3.22zm2 2.56a5 5 0 010 8.44V5.78zm2.24-1.24a8 8 0 010 10.92"
+                />
+              </svg>
+            </div>
+            <div class="card-info">
+              <h2 class="card-title">Volume Booster</h2>
+              <p class="card-desc">
+                Amplify up to <strong>10×</strong> via Web Audio
+              </p>
+            </div>
+            <label class="toggle" aria-label="Toggle Volume Boost">
+              <input type="checkbox" id="volumeToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="slider-group" id="volumeSliderGroup">
+            <div class="slider-labels">
+              <span>0×</span>
+              <span class="slider-value" id="volumeDisplay">1.00×</span>
+              <span>10×</span>
+            </div>
+            <input
+              type="range"
+              class="slider slider-indigo"
+              id="volumeSlider"
+              min="0"
+              max="1000"
+              value="100"
+              step="1"
+              aria-label="Volume boost level"
+            />
+            <div class="presets">
+              <button class="preset-btn" data-vol="100">1×</button>
+              <button class="preset-btn" data-vol="200">2×</button>
+              <button class="preset-btn" data-vol="300">3×</button>
+              <button class="preset-btn" data-vol="500">5×</button>
+              <button class="preset-btn" data-vol="1000">10×</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Speed Card -->
+        <div class="card" id="speedCard">
+          <div class="card-header">
+            <div class="card-icon icon-speed">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  d="M10 2a8 8 0 100 16A8 8 0 0010 2zM6.22 6.22a1 1 0 011.41 0L10 8.59l2.37-2.37a1 1 0 111.41 1.41L11.41 10l2.37 2.37a1 1 0 11-1.41 1.41L10 11.41l-2.37 2.37a1 1 0 01-1.41-1.41L8.59 10 6.22 7.63a1 1 0 010-1.41z"
+                />
+              </svg>
+            </div>
+            <div class="card-info">
+              <h2 class="card-title">Playback Speed</h2>
+              <p class="card-desc">Control all video &amp; audio elements</p>
+            </div>
+            <label class="toggle" aria-label="Toggle Speed Control">
+              <input type="checkbox" id="speedToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="slider-group" id="speedSliderGroup">
+            <div class="slider-labels">
+              <span>0.01×</span>
+              <span class="slider-value" id="speedDisplay">1.00×</span>
+              <span>4×</span>
+            </div>
+            <input
+              type="range"
+              class="slider slider-green"
+              id="speedSlider"
+              min="1"
+              max="400"
+              value="100"
+              step="1"
+              aria-label="Playback speed"
+            />
+            <div class="presets">
+              <button class="preset-btn" data-speed="10">0.1×</button>
+              <button class="preset-btn" data-speed="50">0.5×</button>
+              <button class="preset-btn" data-speed="100">1×</button>
+              <button class="preset-btn" data-speed="150">1.5×</button>
+              <button class="preset-btn" data-speed="200">2×</button>
+              <button class="preset-btn" data-speed="400">4×</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="ytAdCard">
+          <div class="card-header">
+            <div class="card-icon icon-ad">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M23.498 6.163a3.003 3.003 0 0 0-2.11-2.108C19.52 3.5 12 3.5 12 3.5s-7.52 0-9.388.555A3.002 3.002 0 0 0 .502 6.163C0 8.04 0 12 0 12s0 3.96.502 5.837a3.003 3.003 0 0 0 2.11 2.108C4.48 20.5 12 20.5 12 20.5s7.52 0 9.388-.555a3.002 3.002 0 0 0 2.11-2.108C24 15.96 24 12 24 12s0-3.96-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"
+                />
+              </svg>
+            </div>
+            <div class="card-info">
+              <h2 class="card-title">YouTube Ad Skipper</h2>
+              <p class="card-desc">
+                Auto skip ads, mute unskippable ads, and speed ads during
+                playback.
+              </p>
+            </div>
+            <label class="toggle" aria-label="Toggle Auto YouTube Ad Skip">
+              <input type="checkbox" id="ytSkipToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="card-grid">
+            <div class="field-row">
+              <span>Auto Click Skip Button</span>
+              <label class="toggle" aria-label="Toggle Auto Click Skip Button">
+                <input type="checkbox" id="ytAutoSkipToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="field-row">
+              <span>Auto Mute Ads</span>
+              <label class="toggle" aria-label="Toggle Auto Mute Ads">
+                <input type="checkbox" id="ytMuteToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="field-row">
+              <span>Auto Speed-Up Ads</span>
+              <label class="toggle" aria-label="Toggle Auto Speed-Up Ads">
+                <input type="checkbox" id="ytSpeedToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="feature-note" id="ytAdStatus">
+              YouTube ad controls are ready. Enable the feature and open a
+              video.
+            </div>
+          </div>
+        </div>
+
+        <!-- Shortcuts hint -->
+        <div class="shortcut-hint">
+          <span class="shortcut-key">Alt+V</span> Volume Toggle &nbsp;·&nbsp;
+          <span class="shortcut-key">Alt+,/.</span> Speed &nbsp;·&nbsp;
+          <span class="shortcut-key">Alt+S</span> Scroll
+        </div>
+      </section>
+
+      <!-- ══ TAB: SCROLL ════════════════════════════════════════════════ -->
+      <section class="tab-panel" id="tab-scroll">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon icon-scroll">
+              <svg viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </div>
+            <div class="card-info">
+              <h2 class="card-title">Smart Scroll</h2>
+              <p class="card-desc">Controlled page scrolling</p>
+            </div>
+            <label class="toggle" aria-label="Enable Smart Scroll">
+              <input type="checkbox" id="scrollToggle" />
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="scroll-controls" id="scrollControls">
+            <div class="slider-group">
+              <label class="field-label">Scroll Amount</label>
+              <div class="slider-labels">
+                <span>100px</span>
+                <span class="slider-value" id="scrollAmountDisplay">300px</span>
+                <span>1000px</span>
+              </div>
+              <input
+                type="range"
+                class="slider slider-purple"
+                id="scrollAmountSlider"
+                min="100"
+                max="1000"
+                value="300"
+                step="50"
+              />
+            </div>
+
+            <div class="field-group">
+              <label class="field-label">Scroll Behavior</label>
+              <div class="radio-group">
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="scrollMode"
+                    value="smooth"
+                    checked
+                  />
+                  Smooth
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="scrollMode" value="instant" />
+                  Instant
+                </label>
+              </div>
+            </div>
+
+            <div class="scroll-btn-row">
+              <button class="btn-scroll-action" id="scrollDownBtn">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                  <path
+                    d="M8 1a.5.5 0 01.5.5v11.793l3.146-3.147a.5.5 0 01.708.708l-4 4a.5.5 0 01-.708 0l-4-4a.5.5 0 01.708-.708L7.5 13.293V1.5A.5.5 0 018 1z"
+                  />
+                </svg>
+                Scroll Down
+              </button>
+              <button class="btn-scroll-action secondary" id="scrollTopBtn">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                  <path
+                    d="M8 15a.5.5 0 01-.5-.5V2.707L4.354 5.854a.5.5 0 11-.708-.708l4-4a.5.5 0 01.708 0l4 4a.5.5 0 01-.708.708L8.5 2.707V14.5A.5.5 0 018 15z"
+                  />
+                </svg>
+                Scroll to Top
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ TAB: MEDIA ═════════════════════════════════════════════════ -->
+      <section class="tab-panel" id="tab-media">
+        <div class="media-header">
+          <h2 class="media-heading">Page Media</h2>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="btn-scan secondary"
+              id="reloadPageBtn"
+              title="Reload current page"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                <path
+                  d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+                />
+                <path
+                  d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384l-2.36 1.966a.25.25 0 0 1-.41-.192z"
+                />
+              </svg>
+              Reload
+            </button>
+            <button class="btn-scan" id="scanBtn">
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                <path
+                  d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001a1 1 0 00.143.742l3.623 3.622a1 1 0 101.414-1.415l-3.622-3.622a1 1 0 00-.742-.142l.582-.183zm-5.242 1.156a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"
+                />
+              </svg>
+              Scan
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="media-filter-tabs" id="mediaFilterTabs">
+          <button class="media-tab active" data-filter="all">All</button>
+          <button class="media-tab" data-filter="video">Video</button>
+          <button class="media-tab" data-filter="audio">Audio</button>
+          <button class="media-tab" data-filter="image">Images</button>
+          <button class="media-tab" data-filter="document">Documents</button>
+          <button class="media-tab" data-filter="link">Links</button>
+          <button class="media-tab" data-filter="icon">Icons</button>
+        </div>
+
+        <!-- Status / Empty / Loading -->
+        <div class="media-status" id="mediaStatus">
+          <div class="media-empty">
+            <svg viewBox="0 0 48 48" fill="none" width="42">
+              <circle
+                cx="24"
+                cy="24"
+                r="20"
+                stroke="#6366F1"
+                stroke-width="1.5"
+                opacity="0.3"
+              />
+              <path
+                d="M16 20v8l8-4-8-4zM28 18h6M28 24h6M28 30h6"
+                stroke="#6366F1"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
+            </svg>
+            <p>Click <strong>Scan</strong> to detect media on this page</p>
+          </div>
+        </div>
+
+        <!-- Scroll area containing section grids -->
+        <div
+          class="media-scroll-area"
+          id="mediaScrollArea"
+          style="display: none"
+        ></div>
+
+        <!-- Footer actions -->
+        <div class="media-actions" id="mediaActions" style="display: none">
+          <span class="media-count" id="mediaCount">0 items</span>
+          <div style="display: flex; gap: 8px">
+            <button
+              class="btn-zip"
+              id="downloadZipBtn"
+              title="Download all as .zip"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                <path
+                  d="M5 4.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0zm3 0a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"
+                />
+                <path
+                  d="M1 3.5A1.5 1.5 0 0 1 2.5 2h11A1.5 1.5 0 0 1 15 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 12.5v-9zM2.5 3a.5.5 0 0 0-.5.5V5h12V3.5a.5.5 0 0 0-.5-.5h-11zM14 6H2v6.5a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V6z"
+                />
+              </svg>
+              Download as ZIP
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ TAB: COOKIES ═══════════════════════════════════════════════ -->
+      <section class="tab-panel" id="tab-cookies">
+        <div class="cookie-header">
+          <div class="search-box">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+              <path
+                d="M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001a1 1 0 00.143.742l3.623 3.622a1 1 0 101.414-1.415l-3.622-3.622a1 1 0 00-.742-.142l.582-.183zm-5.242 1.156a5.5 5.5 0 110-11 5.5 5.5 0 010 11z"
+              />
+            </svg>
+            <input
+              type="text"
+              id="cookieSearch"
+              placeholder="Search by name or domain..."
+            />
+          </div>
+          <div class="cookie-header-actions">
+            <button
+              class="btn-audit"
+              id="auditCookiesBtn"
+              title="Run Privacy Audit"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                <path
+                  d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.354 4.646l-4 4a.5.5 0 01-.708 0l-2-2a.5.5 0 11.708-.708L7 8.293l3.646-3.647a.5.5 0 01.708.708z"
+                />
+              </svg>
+              Audit
+            </button>
+            <button
+              class="btn-clear-all"
+              id="clearAllCookiesBtn"
+              title="Delete filtered cookies"
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+                <path
+                  d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"
+                />
+                <path
+                  fill-rule="evenodd"
+                  d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 01-1-1V2a1 1 0 011-1H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1v1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Auto-Cleanup Panel -->
+        <div class="auto-cleanup-panel">
+          <div class="auto-cleanup-header">
+            <div class="auto-cleanup-info">
+              <span class="auto-cleanup-title">Auto-Cleanup Mode</span>
+              <p class="auto-cleanup-desc">
+                Automatically purge cookies on detection
+              </p>
+            </div>
+          </div>
+          <div class="auto-cleanup-modes" id="autoCleanupModes">
+            <button class="auto-mode-btn active" data-mode="off">Off</button>
+            <button
+              class="auto-mode-btn"
+              data-mode="risky"
+              title="Auto-remove high risk cookies"
+            >
+              Risky
+            </button>
+            <button
+              class="auto-mode-btn"
+              data-mode="risky-suspicious"
+              title="Auto-remove risky & suspicious"
+            >
+              High+Med
+            </button>
+            <button
+              class="auto-mode-btn"
+              data-mode="all"
+              title="Auto-remove all cookies"
+            >
+              Full Clear
+            </button>
+          </div>
+        </div>
+
+        <!-- Audit Summary Panel -->
+        <div id="auditSummary" class="audit-summary" style="display: none">
+          <div class="audit-stats">
+            <div class="stat-item">
+              <span class="stat-val" id="statTotal">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item risky">
+              <span class="stat-val" id="statRisky">0</span>
+              <span class="stat-label">Risky</span>
+            </div>
+            <div class="stat-item suspicious">
+              <span class="stat-val" id="statSuspicious">0</span>
+              <span class="stat-label">Suspicious</span>
+            </div>
+            <div class="stat-item safe">
+              <span class="stat-val" id="statSafe">0</span>
+              <span class="stat-label">Safe</span>
+            </div>
+          </div>
+          <div class="audit-actions">
+            <div class="cleanup-group">
+              <button id="cleanupRiskyBtn" class="btn-cleanup-risky">
+                Remove 0 Risky
+              </button>
+              <button id="cleanupSuspiciousBtn" class="btn-cleanup-suspicious">
+                Remove 0 Suspicious
+              </button>
+            </div>
+            <button
+              id="closeAuditBtn"
+              class="btn-close-audit"
+              title="Close Audit"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="cookie-filters" id="cookieFilters" style="display: none">
+          <button class="filter-chip active" data-risk="all">All</button>
+          <button class="filter-chip" data-risk="risky">Risky</button>
+          <button class="filter-chip" data-risk="suspicious">Suspicious</button>
+          <button class="filter-chip" data-risk="safe">Safe</button>
+        </div>
+
+        <div class="cookie-status" id="cookieStatus">
+          <div class="cookie-loading">
+            <div class="spinner"></div>
+            <p>Loading cookies...</p>
+          </div>
+        </div>
+
+        <div class="cookie-list" id="cookieList" style="display: none"></div>
+
+        <div class="cookie-footer" id="cookieFooter" style="display: none">
+          <span id="cookieCount">0 cookies found</span>
+          <span id="auditTimestamp" style="font-size: 9px; opacity: 0.7"></span>
+        </div>
+      </section>
+
+      <!-- ══ TAB: PRIVACY ════════════════════════════════════════════════ -->
+      <section class="tab-panel" id="tab-privacy">
+        <div class="privacy-overview">
+          <div class="score-card" id="privacyScoreCard">
+            <div class="score-circle">
+              <svg viewBox="0 0 36 36" class="circular-chart">
+                <path
+                  class="circle-bg"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  class="circle"
+                  id="scoreValueStroke"
+                  stroke-dasharray="0, 100"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <text x="18" y="20.35" class="percentage" id="privacyScoreText">
+                  0
+                </text>
+              </svg>
+            </div>
+            <div class="score-info">
+              <h3 id="riskLevelLabel">Analyzing...</h3>
+              <p id="riskDesc">
+                Scanning site permissions and tracking activity.
+              </p>
+            </div>
+            <!-- scanPrivacyBtn moved to maintenance-hud -->
+          </div>
+        </div>
+
+        <div class="permission-grid" id="permissionGrid">
+          <!-- Permission items will be injected here -->
+        </div>
+
+        <div class="inspector-sections">
+          <div class="inspector-card">
+            <div class="inspector-card-header">
+              <h4>Data Footprint</h4>
+              <span class="badge" id="storageCount">0 B</span>
+            </div>
+            <div class="storage-list" id="storageSummary">
+              <div class="storage-item">
+                <span>LocalStorage</span> <span id="lsVal">0 B</span>
+              </div>
+              <div class="storage-item">
+                <span>SessionStorage</span> <span id="ssVal">0 B</span>
+              </div>
+              <div class="storage-item">
+                <span>Cookies (First-party)</span> <span id="cookieVal">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-card">
+            <div class="inspector-card-header">
+              <h4>Trackers & Origins</h4>
+              <span class="badge danger" id="trackerCount">0 Detected</span>
+            </div>
+            <div class="tracker-list" id="trackerList">
+              <div class="tracker-empty">
+                No external trackers detected yet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Maintenance HUD -->
+        <div class="maintenance-hud">
+          <button
+            class="hud-btn"
+            id="scanPrivacyBtn"
+            title="Re-scan current page"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+              <path
+                d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.775 11.775 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24c.304-.143.662-.352 1.048-.625a11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 62.467 62.467 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"
+              />
+            </svg>
+            <span>Rescan</span>
+          </button>
+
+          <div class="hud-sep"></div>
+
+          <button
+            class="hud-btn danger"
+            id="clearSiteDataBtn"
+            title="Clear Cookies & Local Storage"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+              <path
+                d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"
+              />
+              <path
+                fill-rule="evenodd"
+                d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 01-1-1V2a1 1 0 011-1H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1v1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span>Clear Data</span>
+          </button>
+
+          <button
+            class="hud-btn danger"
+            id="resetAllBtn"
+            title="Factory Reset Extension"
+          >
+            <svg viewBox="0 0 16 16" fill="currentColor" width="14">
+              <path
+                d="M8 3a5 5 0 100 10A5 5 0 008 3zM2 8a6 6 0 1110.89-3.476l1.414-1.414A8 8 0 1016 8h-5V5h3a1 1 0 011 1v5a1 1 0 01-1 1H9a1 1 0 01-1-1V9h1V6H8z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <span>Reset All</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Media Preview Modal -->
+    <div id="mediaPreviewModal" class="modal-overlay" style="display: none">
+      <div class="modal-container">
+        <button class="modal-close" id="closePreviewBtn">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+        <div class="modal-content" id="modalContent">
+          <!-- Content injected via JS -->
+        </div>
+        <div class="modal-footer">
+          <div class="modal-meta">
+            <span id="modalFilename" class="modal-filename">filename.ext</span>
+            <span id="modalRes" class="modal-res"></span>
+          </div>
+          <button id="modalDownloadBtn" class="btn-primary-sm">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="12">
+              <path
+                d="M.5 9.9a.5.5 0 01.5.5v2.5a1 1 0 001 1h12a1 1 0 001-1v-2.5a.5.5 0 011 0v2.5a2 2 0 01-2 2H2a2 2 0 01-2-2v-2.5a.5.5 0 01.5-.5z"
+              />
+              <path
+                d="M7.646 11.854a.5.5 0 00.708 0l3-3a.5.5 0 00-.708-.708L8.5 10.293V1.5a.5.5 0 00-1 0v8.793L5.354 8.146a.5.5 0 10-.708.708l3 3z"
+              />
+            </svg>
+            Download
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="../utils/jszip.min.js"></script>
+    <script src="popup.js"></script>
+
+    <!-- ══ CUSTOM CONFIRM MODAL ═══════════════════════════════════════════ -->
+    <div class="modal confirm-modal" id="confirmModal" style="display: none">
+      <div class="modal-content confirm-content">
+        <div class="confirm-icon" id="confirmIcon">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z" />
+          </svg>
+        </div>
+        <h3 id="confirmTitle">Security Action</h3>
+        <p id="confirmMessage">Are you sure you want to proceed?</p>
+        <div class="confirm-actions">
+          <button id="confirmCancelBtn" class="btn-modal-cancel">Cancel</button>
+          <button id="confirmActionBtn" class="btn-modal-danger">
+            Proceed
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

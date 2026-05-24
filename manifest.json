@@ -1,0 +1,96 @@
+{
+  "manifest_version": 3,
+  "name": "Media Control Toolkit",
+  "version": "1.0.0",
+  "description": "Volume boost up to 10x, playback speed control, smart scroll, and media capture toolkit.",
+  "author": "Media Control Toolkit",
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "My Tools",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*", "ftp://*/*"],
+      "js": ["content.js", "utils/storage-manager.js", "yt-ad-skipper.js"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "downloads",
+    "cookies",
+    "notifications",
+    "webRequest",
+    "offscreen",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "declarativeNetRequestFeedback"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "rules",
+        "enabled": true,
+        "path": "blockingrules.json"
+      }
+    ]
+  },
+
+  "host_permissions": ["<all_urls>"],
+
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "utils/*"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+
+  "commands": {
+    "toggle-volume-boost": {
+      "suggested_key": {
+        "default": "Alt+V"
+      },
+      "description": "Toggle Volume Boost"
+    },
+    "speed-up": {
+      "suggested_key": {
+        "default": "Alt+Period"
+      },
+      "description": "Increase playback speed"
+    },
+    "speed-down": {
+      "suggested_key": {
+        "default": "Alt+Comma"
+      },
+      "description": "Decrease playback speed"
+    },
+    "scroll-down-page": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Smart scroll down"
+    }
+  }
+}
