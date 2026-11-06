@@ -384,11 +384,9 @@
     if (speedRow) speedRow.classList.toggle("disabled", !isEnabled);
 
     if (isEnabled) {
-      ytAdStatus.textContent =
-        "Auto skip enabled. Open YouTube and let the ad skipper work silently.";
+      ytAdStatus.textContent = "Active. Skipping & speeding ads on YouTube.";
     } else {
-      ytAdStatus.textContent =
-        "YouTube Ad Skipper is disabled. Enable it to start.";
+      ytAdStatus.textContent = "Disabled. Enable to start.";
     }
   }
 
@@ -1961,11 +1959,32 @@
     updateAutoCleanupUI(mode);
   });
 
-  // Auto-Cleanup Mode Listeners
-  autoCleanupModes.addEventListener("click", (e) => {
+  // Auto-Cleanup Mode Listeners with Confirmation for High+Med and Full Clear
+  autoCleanupModes.addEventListener("click", async (e) => {
     const btn = e.target.closest(".auto-mode-btn");
     if (!btn) return;
     const mode = btn.dataset.mode;
+
+    // Warning confirmation before enabling High+Med or Full Clear
+    if (mode === "risky-suspicious" || mode === "all") {
+      const isFull = mode === "all";
+      const modeLabel = isFull ? "Full Clear" : "High+Med";
+      const warningMessage = isFull
+        ? "⚠️ WARNING: \"Full Clear\" auto-mode will automatically wipe ALL cookies!\n\n⚠️ This will TERMINATE active login sessions across ALL websites (including Google, YouTube, banking, and email accounts).\n\nAre you sure you want to proceed?"
+        : "⚠️ WARNING: \"High+Med\" auto-mode aggressively purges tracking and suspicious cookies.\n\n⚠️ This will clear active login sessions on several websites (including Google and social accounts).\n\nAre you sure you want to proceed?";
+
+      const confirmed = await showConfirm(
+        `Enable ${modeLabel} Auto-Cleanup?`,
+        warningMessage,
+        "Continue & Enable",
+        "warning"
+      );
+
+      if (!confirmed) {
+        return; // Cancelled, keep previous mode
+      }
+    }
+
     chrome.storage.local.set({ autoCleanupMode: mode }, () => {
       updateAutoCleanupUI(mode);
       loadCookies(); // Trigger fresh scan/cleanup
@@ -2407,18 +2426,18 @@
 
     // Color logic
     let color = "#34d399"; // green
-    let label = "Secure & Private";
-    let desc = "Low tracking activity detected on this page.";
+    let label = "Secure";
+    let desc = "Minimal tracking detected.";
 
     if (score < 80) {
       color = "#fbbf24";
       label = "Moderate Risk";
-      desc = "Some tracking scripts or permissions are active.";
+      desc = "Active trackers or scripts.";
     }
     if (score < 50) {
       color = "#f87171";
-      label = "Privacy Invasive";
-      desc = "High tracking density or sensitive permissions detected.";
+      label = "High Risk";
+      desc = "Heavy tracking scripts detected.";
     }
 
     privacyScoreCircle.style.stroke = color;
@@ -2789,6 +2808,8 @@
 
   function initUpdateChecker() {
     const manifestVer = chrome.runtime.getManifest().version;
+    const headerBadge = $("headerVersionBadge");
+    if (headerBadge) headerBadge.textContent = `v${manifestVer}`;
     const statusLbl = $("updateStatusText");
     if (statusLbl) {
       statusLbl.textContent = `v${manifestVer}`;

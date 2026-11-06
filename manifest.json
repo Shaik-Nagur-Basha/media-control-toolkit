@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Media Control Toolkit",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Volume boost up to 10x, playback speed control, smart scroll, and media capture toolkit.",
   "author": "Media Control Toolkit",
 

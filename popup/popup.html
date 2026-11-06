@@ -10,10 +10,14 @@
     <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
     <header class="header">
       <div class="header-brand">
-        <img src="../assets/logo.svg" alt="My Tools Logo" class="header-logo" />
+        <div class="header-logo-wrap">
+          <img src="../assets/logo.svg" alt="Media Control Toolkit Logo" class="header-logo" />
+        </div>
         <div class="header-text">
-          <span class="header-title">My Tools</span>
-          <span class="header-subtitle">Media Control Toolkit</span>
+          <div class="header-title-row">
+            <span class="header-title">Media Control Toolkit</span>
+            <span class="header-badge" id="headerVersionBadge">v1.1.0</span>
+          </div>
         </div>
       </div>
       <div class="header-status" id="statusDot" title="Extension active"></div>
@@ -195,9 +199,12 @@
               </svg>
             </div>
             <div class="card-info">
-              <h2 class="card-title">Volume Booster</h2>
+              <div class="card-title-row">
+                <h2 class="card-title">Volume Booster</h2>
+                <span class="shortcut-tag"><kbd>Alt</kbd>+<kbd>V</kbd></span>
+              </div>
               <p class="card-desc">
-                Amplify up to <strong>10×</strong> via Web Audio
+                Amplify up to <strong>10×</strong> cleanly
               </p>
             </div>
             <label class="toggle" aria-label="Toggle Volume Boost">
@@ -238,13 +245,16 @@
             <div class="card-icon icon-speed">
               <svg viewBox="0 0 20 20" fill="currentColor">
                 <path
-                  d="M10 2a8 8 0 100 16A8 8 0 0010 2zM6.22 6.22a1 1 0 011.41 0L10 8.59l2.37-2.37a1 1 0 111.41 1.41L11.41 10l2.37 2.37a1 1 0 11-1.41 1.41L10 11.41l-2.37 2.37a1 1 0 01-1.41-1.41L8.59 10 6.22 7.63a1 1 0 010-1.41z"
+                  d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"
                 />
               </svg>
             </div>
             <div class="card-info">
-              <h2 class="card-title">Playback Speed</h2>
-              <p class="card-desc">Control all video &amp; audio elements</p>
+              <div class="card-title-row">
+                <h2 class="card-title">Playback Speed</h2>
+                <span class="shortcut-tag"><kbd>Alt</kbd>+<kbd>P</kbd></span>
+              </div>
+              <p class="card-desc">Granular speed 0.01× to 4×</p>
             </div>
             <label class="toggle" aria-label="Toggle Speed Control">
               <input type="checkbox" id="speedToggle" />
@@ -289,10 +299,12 @@
               </svg>
             </div>
             <div class="card-info">
-              <h2 class="card-title">YouTube Ad Skipper</h2>
+              <div class="card-title-row">
+                <h2 class="card-title">YouTube Ad Skipper</h2>
+                <span class="shortcut-tag yt-shortcut"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Y</kbd></span>
+              </div>
               <p class="card-desc">
-                Auto skip ads, mute unskippable ads, and speed ads during
-                playback. <span style="display:inline-block; margin-top:2px; color:#10b981; font-weight:600;">(Shortcut: Ctrl+Shift+Y on YouTube)</span>
+                Auto-skip, mute &amp; speed ads
               </p>
             </div>
             <label class="toggle" aria-label="Toggle Auto YouTube Ad Skip">
@@ -303,21 +315,21 @@
 
           <div class="card-grid">
             <div class="field-row">
-              <span>Auto Click Skip Button</span>
+              <span>Auto-Skip Button</span>
               <label class="toggle" aria-label="Toggle Auto Click Skip Button">
                 <input type="checkbox" id="ytAutoSkipToggle" />
                 <span class="toggle-slider"></span>
               </label>
             </div>
             <div class="field-row">
-              <span>Auto Mute Ads</span>
+              <span>Auto-Mute Ads</span>
               <label class="toggle" aria-label="Toggle Auto Mute Ads">
                 <input type="checkbox" id="ytMuteToggle" />
                 <span class="toggle-slider"></span>
               </label>
             </div>
             <div class="field-row">
-              <span>Auto Speed-Up Ads</span>
+              <span>Speed-Up Ads</span>
               <label class="toggle" aria-label="Toggle Auto Speed-Up Ads">
                 <input type="checkbox" id="ytSpeedToggle" />
                 <span class="toggle-slider"></span>
@@ -330,13 +342,6 @@
           </div>
         </div>
 
-        <!-- Shortcuts hint -->
-        <div class="shortcut-hint">
-          <span class="shortcut-key">Alt+V</span> Volume &nbsp;·&nbsp;
-          <span class="shortcut-key">Alt+P</span> Speed &nbsp;·&nbsp;
-          <span class="shortcut-key" title="Active on YouTube">Ctrl+Shift+Y</span> YT Skipper
-        </div>
-
         <!-- Extension Updates Row -->
         <div class="update-check-row">
           <button id="btnCheckUpdate" class="btn-check-update" type="button">
@@ -346,7 +351,7 @@
             </svg>
             <span id="checkUpdateText">Check for Updates</span>
           </button>
-          <span id="updateStatusText" class="update-status-label">v1.0.0</span>
+          <span id="updateStatusText" class="update-status-label">v1.1.0</span>
         </div>
       </section>
 
@@ -698,7 +703,7 @@
             <div class="score-info">
               <h3 id="riskLevelLabel">Analyzing...</h3>
               <p id="riskDesc">
-                Scanning site permissions and tracking activity.
+                Scanning site activity.
               </p>
             </div>
             <!-- scanPrivacyBtn moved to maintenance-hud -->
@@ -712,7 +717,7 @@
         <div class="inspector-sections">
           <div class="inspector-card">
             <div class="inspector-card-header">
-              <h4>Data Footprint</h4>
+              <h4>Storage</h4>
               <span class="badge" id="storageCount">0 B</span>
             </div>
             <div class="storage-list" id="storageSummary">
@@ -723,19 +728,19 @@
                 <span>SessionStorage</span> <span id="ssVal">0 B</span>
               </div>
               <div class="storage-item">
-                <span>Cookies (First-party)</span> <span id="cookieVal">0</span>
+                <span>Cookies</span> <span id="cookieVal">0</span>
               </div>
             </div>
           </div>
 
           <div class="inspector-card">
             <div class="inspector-card-header">
-              <h4>Trackers & Origins</h4>
+              <h4>Trackers</h4>
               <span class="badge danger" id="trackerCount">0 Detected</span>
             </div>
             <div class="tracker-list" id="trackerList">
               <div class="tracker-empty">
-                No external trackers detected yet.
+                No trackers detected.
               </div>
             </div>
           </div>
