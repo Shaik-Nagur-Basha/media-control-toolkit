@@ -308,6 +308,13 @@
 
   function messageListener(message, _sender, sendResponse) {
     if (message.target !== "content") return false;
+
+    if (message.action === "toggleYoutubeSkipperShortcut") {
+      toggleYoutubeAdSkipperShortcut();
+      sendResponse({ ok: true, isEnabled: STATE.settings.ytSkipEnabled });
+      return true;
+    }
+
     if (message.action !== "updateYoutubeAdSkipperSettings") return false;
 
     if (message.settings && typeof message.settings === "object") {
@@ -464,6 +471,163 @@
     }
   }
 
+
+  // ──────────────────────────────────────────────
+  // YouTube Ad Skipper: Shortcut Toggle & Confirmation Toast
+  // ──────────────────────────────────────────────
+  let activeToastElement = null;
+  let toastTimeout = null;
+
+  function showYoutubeSkipperToast(isEnabled) {
+    try {
+      if (activeToastElement) {
+        clearTimeout(toastTimeout);
+        activeToastElement.remove();
+        activeToastElement = null;
+      }
+
+      const toast = document.createElement("div");
+      toast.id = "mct-yt-ad-skipper-toast";
+
+      const themeColor = isEnabled ? "#10b981" : "#ef4444";
+      const glowColor = isEnabled ? "rgba(16, 185, 129, 0.45)" : "rgba(239, 68, 68, 0.45)";
+      const borderGlow = isEnabled ? "rgba(16, 185, 129, 0.7)" : "rgba(239, 68, 68, 0.7)";
+      const badgeBg = isEnabled ? "rgba(16, 185, 129, 0.18)" : "rgba(239, 68, 68, 0.18)";
+      const statusText = isEnabled ? "ON" : "OFF";
+
+      const iconSvg = isEnabled
+        ? `<svg viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;color:#10b981;flex-shrink:0;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`
+        : `<svg viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;color:#ef4444;flex-shrink:0;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+
+      toast.innerHTML = `
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(15, 23, 42, 0.94);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border: 1.5px solid ${borderGlow};
+          border-radius: 9999px;
+          padding: 8px 18px 8px 14px;
+          box-shadow: 0 10px 30px -4px ${glowColor}, 0 6px 12px -2px rgba(0, 0, 0, 0.5);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          color: #ffffff;
+          user-select: none;
+          pointer-events: none;
+        ">
+          ${iconSvg}
+          <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.2px; color: #f8fafc;">
+            YouTube Ad Skipper is
+          </span>
+          <span style="
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: ${badgeBg};
+            color: ${themeColor};
+            border: 1px solid ${borderGlow};
+            text-transform: uppercase;
+          ">
+            ${statusText}
+          </span>
+        </div>
+      `;
+
+      Object.assign(toast.style, {
+        position: "fixed",
+        top: "22px",
+        left: "50%",
+        transform: "translateX(-50%) translateY(-12px) scale(0.95)",
+        zIndex: "2147483647",
+        pointerEvents: "none",
+        opacity: "0",
+        transition: "transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease-out",
+      });
+
+      const container = document.fullscreenElement || document.body || document.documentElement;
+      container.appendChild(toast);
+      activeToastElement = toast;
+
+      requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateX(-50%) translateY(0) scale(1)";
+      });
+
+      toastTimeout = setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(-14px) scale(0.95)";
+        setTimeout(() => {
+          if (activeToastElement === toast) {
+            activeToastElement = null;
+          }
+          toast.remove();
+        }, 260);
+      }, 2300);
+    } catch (err) {
+      log("Toast display failed:", err);
+    }
+  }
+
+  function toggleYoutubeAdSkipperShortcut() {
+    const newStatus = !STATE.settings.ytSkipEnabled;
+    STATE.settings.ytSkipEnabled = newStatus;
+
+    // Persist to storage
+    try {
+      chrome.storage.local.set({ ytSkipEnabled: newStatus });
+    } catch (err) {
+      log("Storage set error:", err);
+    }
+
+    if (!newStatus && STATE.active) {
+      leaveAdState();
+    }
+    debouncedHandleAdStatus();
+    syncAutoSkipLoop();
+
+    // Show visual confirmation toast
+    showYoutubeSkipperToast(newStatus);
+  }
+
+  function setupKeyboardShortcut() {
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (!isYouTubePage()) return;
+
+        // Ignore if user is currently typing in an input, textarea, or contentEditable element
+        const target = e.target;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable ||
+            target.getAttribute?.("role") === "textbox")
+        ) {
+          return;
+        }
+
+        // Recommended shortcut: Ctrl+Shift+Y
+        // - No conflict with YouTube (single keys & Shift+N/P)
+        // - No conflict with Windows or Chrome browser shortcuts
+        if (
+          e.ctrlKey &&
+          e.shiftKey &&
+          !e.altKey &&
+          (e.key === "Y" || e.key === "y" || e.code === "KeyY")
+        ) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleYoutubeAdSkipperShortcut();
+        }
+      },
+      true
+    );
+  }
+
   function init() {
     if (!isYouTubePage()) {
       return;
@@ -489,6 +653,7 @@
 
     watchSPA();
     startAdMonitor();
+    setupKeyboardShortcut();
     storageManager.subscribe(storageChangeListener);
     chrome.runtime.onMessage.addListener(messageListener);
   }

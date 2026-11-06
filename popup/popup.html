@@ -131,6 +131,32 @@
     </div>
     <div class="theme-panel-backdrop" id="themePanelBackdrop"></div>
 
+    <!-- ══ RELEASE NOTES INFO POPUP ═══════════════════════════════════ -->
+    <div id="releaseNotesCard" class="release-notes-card" style="display: none;">
+      <div class="release-notes-header">
+        <div class="release-notes-title-group">
+          <span class="release-badge">UPDATE</span>
+          <span class="release-version-tag" id="releaseVersionTag">v1.0.0</span>
+        </div>
+        <button id="btnCloseReleaseNotes" class="btn-release-close" type="button" title="Close">✕</button>
+      </div>
+      <div class="release-notes-subtitle" id="releaseNotesTitle">Release Highlights</div>
+      <div class="release-notes-content" id="releaseNotesContent">
+        <!-- Notes injected via JS -->
+      </div>
+      <div class="release-notes-footer">
+        <span class="release-bat-hint">
+          ⚡ Run <strong>update.bat</strong> to 1-click update
+        </span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <a id="btnGetReleaseZip" href="https://github.com/Shaik-Nagur-Basha/media-control-toolkit/releases" target="_blank" class="btn-release-action">
+            Release ↗
+          </a>
+          <button id="btnDismissNotes" class="btn-release-dismiss" type="button">Dismiss</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ TABS ════════════════════════════════════════════════════════ -->
     <nav class="tabs" role="tablist">
       <button
@@ -266,7 +292,7 @@
               <h2 class="card-title">YouTube Ad Skipper</h2>
               <p class="card-desc">
                 Auto skip ads, mute unskippable ads, and speed ads during
-                playback.
+                playback. <span style="display:inline-block; margin-top:2px; color:#10b981; font-weight:600;">(Shortcut: Ctrl+Shift+Y on YouTube)</span>
               </p>
             </div>
             <label class="toggle" aria-label="Toggle Auto YouTube Ad Skip">
@@ -306,9 +332,21 @@
 
         <!-- Shortcuts hint -->
         <div class="shortcut-hint">
-          <span class="shortcut-key">Alt+V</span> Volume Toggle &nbsp;·&nbsp;
-          <span class="shortcut-key">Alt+,/.</span> Speed &nbsp;·&nbsp;
-          <span class="shortcut-key">Alt+S</span> Scroll
+          <span class="shortcut-key">Alt+V</span> Volume &nbsp;·&nbsp;
+          <span class="shortcut-key">Alt+P</span> Speed &nbsp;·&nbsp;
+          <span class="shortcut-key" title="Active on YouTube">Ctrl+Shift+Y</span> YT Skipper
+        </div>
+
+        <!-- Extension Updates Row -->
+        <div class="update-check-row">
+          <button id="btnCheckUpdate" class="btn-check-update" type="button">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="12" height="12">
+              <path d="M8 3a5 5 0 104.546 2.914.5.5 0 01.908-.417A6 6 0 118 2v1z"/>
+              <path d="M8 0a.5.5 0 01.5.5v3a.5.5 0 01-1 0V1.5A.5.5 0 018 0z"/>
+            </svg>
+            <span id="checkUpdateText">Check for Updates</span>
+          </button>
+          <span id="updateStatusText" class="update-status-label">v1.0.0</span>
         </div>
       </section>
 

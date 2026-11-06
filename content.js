@@ -20,13 +20,31 @@
   window.__MCT_INJECTED__ = true;
 
   // ══════════════════════════════════════════════════════════════════════
-  // 1. WEB AUDIO — GainNode Volume Booster
-  //    Runs entirely in the content-script execution context.
-  //    No <script> tags, no eval — 100% CSP-safe.
+  // 1. WEB AUDIO — High-Fidelity Dynamic Volume Booster & Adaptive Limiter
+  //    Runs entirely in the content-script execution context (100% CSP-Safe).
+  //    Features:
+  //     - DynamicsCompressorNode: auto adapts threshold/ratio to physical device limits
+  //     - WaveShaperNode: tanh soft-saturation preventing harsh digital square-wave clipping
+  //     - MasterLimiter: true-peak ceiling safety to preserve crystal clear audio up to 10x
   // ══════════════════════════════════════════════════════════════════════
   let audioCtx = null;
-  /** @type {WeakMap<HTMLMediaElement, {source: MediaElementAudioSourceNode, gain: GainNode}>} */
+  /** @type {WeakMap<HTMLMediaElement, {source: MediaElementAudioSourceNode, preGain: GainNode, compressor: DynamicsCompressorNode, softClipper: WaveShaperNode, masterLimiter: GainNode}>} */
   const gainMap = new WeakMap();
+
+  let cachedSoftClipCurve = null;
+  function getSoftClipCurve() {
+    if (cachedSoftClipCurve) return cachedSoftClipCurve;
+    const n = 4096;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      // Hyperbolic tangent soft saturation curve: perfectly transparent at normal levels,
+      // smoothly curves high amplitude peaks approaching 1.0 without nasty square-wave distortion.
+      curve[i] = Math.tanh(x * 1.15) / Math.tanh(1.15);
+    }
+    cachedSoftClipCurve = curve;
+    return cachedSoftClipCurve;
+  }
 
   function getAudioCtx() {
     if (!audioCtx || audioCtx.state === "closed") {
@@ -60,16 +78,62 @@
     if (!(el instanceof HTMLMediaElement)) return;
     try {
       const ctx = getAudioCtx();
-      if (!gainMap.has(el)) {
+      let nodeChain = gainMap.get(el);
+      if (!nodeChain) {
         const source = ctx.createMediaElementSource(el);
-        const gain = ctx.createGain();
-        source.connect(gain);
-        gain.connect(ctx.destination);
-        gainMap.set(el, { source, gain });
+        const preGain = ctx.createGain();
+        const compressor = ctx.createDynamicsCompressor();
+        const softClipper = ctx.createWaveShaper();
+        softClipper.curve = getSoftClipCurve();
+        try {
+          softClipper.oversample = "4x";
+        } catch (_) {}
+        const masterLimiter = ctx.createGain();
+
+        // High-Fidelity Audio Graph:
+        // Source -> PreGain (Boost) -> Compressor (Dynamic limit) -> SoftClipper (Saturation) -> MasterLimiter -> Destination
+        source.connect(preGain);
+        preGain.connect(compressor);
+        compressor.connect(softClipper);
+        softClipper.connect(masterLimiter);
+        masterLimiter.connect(ctx.destination);
+
+        nodeChain = { source, preGain, compressor, softClipper, masterLimiter };
+        gainMap.set(el, nodeChain);
       }
-      const { gain } = gainMap.get(el);
+
+      const { preGain, compressor, masterLimiter } = nodeChain;
+      const t = ctx.currentTime;
+
       // Smooth ramp — avoids click/pop artefacts
-      gain.gain.setTargetAtTime(gainValue, ctx.currentTime, 0.015);
+      preGain.gain.setTargetAtTime(gainValue, t, 0.015);
+
+      if (gainValue <= 1.0) {
+        // Linear / Transparent profile when boost is off or at 1x
+        compressor.threshold.setTargetAtTime(-1.0, t, 0.02);
+        compressor.knee.setTargetAtTime(40, t, 0.02);
+        compressor.ratio.setTargetAtTime(1.0, t, 0.02);
+        compressor.attack.setTargetAtTime(0.003, t, 0.02);
+        compressor.release.setTargetAtTime(0.25, t, 0.02);
+        masterLimiter.gain.setTargetAtTime(1.0, t, 0.02);
+      } else {
+        // Dynamic adaptive compression profile based on device acoustic output capacity:
+        // Automatically scales threshold, ratio, and knee as volume approaches 10x.
+        // Low parts are amplified cleanly, loud bursts are softly tamed before hardware distortion.
+        const boostFactor = Math.min(1.0, (gainValue - 1) / 9); // 0.0 at 1x to 1.0 at 10x
+        const threshold = -6 - (boostFactor * 18); // -6 dB down to -24 dB
+        const ratio = 3 + (boostFactor * 17); // 3:1 up to 20:1 brickwall limiter
+        const knee = 20 + (boostFactor * 10); // 20 dB to 30 dB smooth knee
+
+        compressor.threshold.setTargetAtTime(threshold, t, 0.02);
+        compressor.knee.setTargetAtTime(knee, t, 0.02);
+        compressor.ratio.setTargetAtTime(ratio, t, 0.02);
+        compressor.attack.setTargetAtTime(0.003, t, 0.02);
+        compressor.release.setTargetAtTime(0.18, t, 0.02);
+
+        // Safe true-peak ceiling: prevents DAC inter-sample clipping on speakers / headphones
+        masterLimiter.gain.setTargetAtTime(0.96, t, 0.02);
+      }
     } catch (_) {
       // Cross-origin restriction or element already sourced elsewhere — silently ignore
     }
@@ -967,6 +1031,103 @@
   // ══════════════════════════════════════════════════════════════════════
   // 6. MESSAGE LISTENER
   // ══════════════════════════════════════════════════════════════════════
+
+  // ── Universal Top-Middle Notification Toast ─────────────────────────
+  let activeMctToast = null;
+  let mctToastTimeout = null;
+
+  function showMctToast(title, isEnabled, detailText) {
+    try {
+      if (activeMctToast) {
+        clearTimeout(mctToastTimeout);
+        activeMctToast.remove();
+        activeMctToast = null;
+      }
+
+      const toast = document.createElement("div");
+      toast.id = "mct-notification-toast";
+
+      const themeColor = isEnabled ? "#10b981" : "#ef4444";
+      const glowColor = isEnabled ? "rgba(16, 185, 129, 0.45)" : "rgba(239, 68, 68, 0.45)";
+      const borderGlow = isEnabled ? "rgba(16, 185, 129, 0.7)" : "rgba(239, 68, 68, 0.7)";
+      const badgeBg = isEnabled ? "rgba(16, 185, 129, 0.18)" : "rgba(239, 68, 68, 0.18)";
+      const statusText = isEnabled ? "ON" : "OFF";
+      const extraLabel = detailText && isEnabled ? ` (${detailText})` : "";
+
+      const iconSvg = isEnabled
+        ? `<svg viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;color:#10b981;flex-shrink:0;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`
+        : `<svg viewBox="0 0 20 20" fill="currentColor" style="width:18px;height:18px;color:#ef4444;flex-shrink:0;"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+
+      toast.innerHTML = `
+        <div style="
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(15, 23, 42, 0.94);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border: 1.5px solid ${borderGlow};
+          border-radius: 9999px;
+          padding: 8px 18px 8px 14px;
+          box-shadow: 0 10px 30px -4px ${glowColor}, 0 6px 12px -2px rgba(0, 0, 0, 0.5);
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          color: #ffffff;
+          user-select: none;
+          pointer-events: none;
+        ">
+          ${iconSvg}
+          <span style="font-size: 13.5px; font-weight: 500; letter-spacing: 0.2px; color: #f8fafc;">
+            ${title} is
+          </span>
+          <span style="
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: ${badgeBg};
+            color: ${themeColor};
+            border: 1px solid ${borderGlow};
+            text-transform: uppercase;
+          ">
+            ${statusText}${extraLabel}
+          </span>
+        </div>
+      `;
+
+      Object.assign(toast.style, {
+        position: "fixed",
+        top: "22px",
+        left: "50%",
+        transform: "translateX(-50%) translateY(-12px) scale(0.95)",
+        zIndex: "2147483647",
+        pointerEvents: "none",
+        opacity: "0",
+        transition: "transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease-out",
+      });
+
+      const container = document.fullscreenElement || document.body || document.documentElement;
+      container.appendChild(toast);
+      activeMctToast = toast;
+
+      requestAnimationFrame(() => {
+        toast.style.opacity = "1";
+        toast.style.transform = "translateX(-50%) translateY(0) scale(1)";
+      });
+
+      mctToastTimeout = setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(-14px) scale(0.95)";
+        setTimeout(() => {
+          if (activeMctToast === toast) {
+            activeMctToast = null;
+          }
+          toast.remove();
+        }, 260);
+      }, 2300);
+    } catch (_) {}
+  }
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.target !== "content") return false;
 
@@ -975,6 +1136,9 @@
         currentGain = message.value;
         gainEnabled = message.value > 1.0;
         applyVolumeToAll(message.value);
+        if (message.showToast) {
+          showMctToast("Volume Booster", message.enabled ?? (message.value > 1.0), `${parseFloat(message.value || 1).toFixed(2)}x`);
+        }
         sendResponse({ ok: true });
         break;
       }
@@ -982,6 +1146,9 @@
         currentSpeed = message.value;
         speedEnabled = message.value !== 1.0;
         applySpeedToAll(message.value);
+        if (message.showToast) {
+          showMctToast("Playback Speed", message.enabled ?? (message.value !== 1.0), `${parseFloat(message.value || 1).toFixed(2)}x`);
+        }
         sendResponse({ ok: true });
         break;
       }

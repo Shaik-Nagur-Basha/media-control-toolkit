@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Media Control Toolkit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Volume boost up to 10x, playback speed control, smart scroll, and media capture toolkit.",
   "author": "Media Control Toolkit",
 
@@ -40,7 +40,8 @@
     "offscreen",
     "declarativeNetRequest",
     "declarativeNetRequestWithHostAccess",
-    "declarativeNetRequestFeedback"
+    "declarativeNetRequestFeedback",
+    "alarms"
   ],
   "declarative_net_request": {
     "rule_resources": [
@@ -72,25 +73,19 @@
       "suggested_key": {
         "default": "Alt+V"
       },
-      "description": "Toggle Volume Boost"
+      "description": "Toggle Volume Boost ON/OFF"
     },
-    "speed-up": {
+    "toggle-playback-speed": {
       "suggested_key": {
-        "default": "Alt+Period"
+        "default": "Alt+P"
       },
-      "description": "Increase playback speed"
+      "description": "Toggle Playback Speed ON/OFF"
     },
-    "speed-down": {
+    "toggle-youtube-ad-skipper": {
       "suggested_key": {
-        "default": "Alt+Comma"
+        "default": "Ctrl+Shift+Y"
       },
-      "description": "Decrease playback speed"
-    },
-    "scroll-down-page": {
-      "suggested_key": {
-        "default": "Alt+S"
-      },
-      "description": "Smart scroll down"
+      "description": "Toggle YouTube Ad Skipper ON/OFF"
     }
   }
 }

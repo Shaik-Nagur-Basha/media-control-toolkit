@@ -224,6 +224,18 @@ async function handleBackgroundMessage(message, sender, sendResponse) {
       break;
     }
 
+    case "checkForUpdates": {
+      const updateData = await checkGithubUpdate(true);
+      sendResponse(updateData);
+      break;
+    }
+
+    case "getStoredUpdateInfo": {
+      const res = await chrome.storage.local.get("extensionUpdateInfo");
+      sendResponse(res.extensionUpdateInfo || null);
+      break;
+    }
+
     default:
       sendResponse({ error: "Unknown action" });
   }
@@ -289,6 +301,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 
   const storage = await chrome.storage.local.get([
     "speed",
+    "speedEnabled",
     "volumeBoost",
     "volumeEnabled",
   ]);
@@ -296,11 +309,27 @@ chrome.commands.onCommand.addListener(async (command) => {
   switch (command) {
     case "toggle-volume-boost": {
       const enabled = !storage.volumeEnabled;
+      const boostVal = storage.volumeBoost && storage.volumeBoost > 1.0 ? storage.volumeBoost : 2.0;
       await chrome.storage.local.set({ volumeEnabled: enabled });
       chrome.tabs.sendMessage(tabs[0].id, {
         target: "content",
         action: "setVolume",
-        value: enabled ? storage.volumeBoost : 1.0,
+        value: enabled ? boostVal : 1.0,
+        showToast: true,
+        enabled: enabled,
+      });
+      break;
+    }
+    case "toggle-playback-speed": {
+      const enabled = !storage.speedEnabled;
+      const targetSpeed = storage.speed && storage.speed !== 1.0 ? storage.speed : 1.5;
+      await chrome.storage.local.set({ speedEnabled: enabled });
+      chrome.tabs.sendMessage(tabs[0].id, {
+        target: "content",
+        action: "setSpeed",
+        value: enabled ? targetSpeed : 1.0,
+        showToast: true,
+        enabled: enabled,
       });
       break;
     }
@@ -311,6 +340,8 @@ chrome.commands.onCommand.addListener(async (command) => {
         target: "content",
         action: "setSpeed",
         value: newSpeed,
+        showToast: true,
+        enabled: true,
       });
       break;
     }
@@ -321,6 +352,8 @@ chrome.commands.onCommand.addListener(async (command) => {
         target: "content",
         action: "setSpeed",
         value: newSpeed,
+        showToast: true,
+        enabled: newSpeed !== 1.0,
       });
       break;
     }
@@ -329,6 +362,16 @@ chrome.commands.onCommand.addListener(async (command) => {
         target: "content",
         action: "scrollDown",
       });
+      break;
+    }
+    case "toggle-youtube-ad-skipper": {
+      const tab = tabs[0];
+      if (tab && tab.url && /(^|\.)youtube\.com/i.test(tab.url)) {
+        chrome.tabs.sendMessage(tab.id, {
+          target: "content",
+          action: "toggleYoutubeSkipperShortcut",
+        });
+      }
       break;
     }
   }
@@ -804,3 +847,85 @@ chrome.storage.local.get("extensionId", (res) => {
   fetchRules();
   updateRuleList();
 });
+
+// ──────────────────────────────────────────────
+// GitHub Auto-Update & Version Checking
+// ──────────────────────────────────────────────
+const GITHUB_REPO = "Shaik-Nagur-Basha/media-control-toolkit";
+
+function isNewerVersion(remote, local) {
+  if (!remote || !local) return false;
+  const cleanRemote = remote.replace(/^v/i, "").trim();
+  const cleanLocal = local.replace(/^v/i, "").trim();
+  const rParts = cleanRemote.split(".").map((n) => parseInt(n, 10) || 0);
+  const lParts = cleanLocal.split(".").map((n) => parseInt(n, 10) || 0);
+  const maxLen = Math.max(rParts.length, lParts.length);
+  for (let i = 0; i < maxLen; i++) {
+    const r = rParts[i] || 0;
+    const l = lParts[i] || 0;
+    if (r > l) return true;
+    if (r < l) return false;
+  }
+  return false;
+}
+
+async function checkGithubUpdate(isManual = false) {
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+      {
+        headers: { Accept: "application/vnd.github.v3+json" },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return {
+          hasUpdate: false,
+          currentVersion: chrome.runtime.getManifest().version,
+          message: "No published releases found on GitHub repository yet.",
+        };
+      }
+      return {
+        hasUpdate: false,
+        error: `GitHub API returned HTTP ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const latestVersion = (data.tag_name || "").replace(/^v/i, "");
+    const currentVersion = chrome.runtime.getManifest().version;
+    const hasUpdate = isNewerVersion(latestVersion, currentVersion);
+
+    const updateInfo = {
+      hasUpdate,
+      currentVersion,
+      latestVersion: latestVersion || data.name,
+      releaseName: data.name || data.tag_name,
+      releaseUrl: data.html_url || `https://github.com/${GITHUB_REPO}/releases`,
+      zipUrl: data.zipball_url,
+      releaseNotes: data.body || "",
+      publishedAt: data.published_at,
+      checkedAt: Date.now(),
+    };
+
+    await chrome.storage.local.set({ extensionUpdateInfo: updateInfo });
+    return updateInfo;
+  } catch (err) {
+    return {
+      hasUpdate: false,
+      currentVersion: chrome.runtime.getManifest().version,
+      error: err.message,
+    };
+  }
+}
+
+// Periodic background update check (every 24 hours)
+try {
+  chrome.alarms?.create("check-extension-updates", { periodInMinutes: 1440 });
+  chrome.alarms?.onAlarm.addListener((alarm) => {
+    if (alarm.name === "check-extension-updates") {
+      checkGithubUpdate(false);
+    }
+  });
+} catch (_) {}

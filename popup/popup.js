@@ -358,6 +358,9 @@
 
     // Ping content script to verify it's alive
     pingContentScript();
+
+    // Initialize Extension Version & Updates
+    initUpdateChecker();
   }
 
   function updateYtAdStatus() {
@@ -2749,4 +2752,130 @@
       }
     }
   });
+
+  // ──────────────────────────────────────────────
+  // Extension Updates & Real-time State Sync
+  // ──────────────────────────────────────────────
+  let lastReleaseInfo = null;
+  function formatReleaseNotes(rawText) {
+    if (!rawText || !rawText.trim()) {
+      return '<div class="release-note-item">• New features, bug fixes, and performance updates.</div>';
+    }
+    const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const items = lines.map((line) => {
+      let clean = line.replace(/^#{1,6}\s*/, "");
+      clean = clean.replace(/^[\*\-\+]\s*/, "• ");
+      clean = clean.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+      return `<div class="release-note-item">${clean}</div>`;
+    });
+    return items.slice(0, 8).join("");
+  }
+
+  function showReleaseNotesPopup(info) {
+    lastReleaseInfo = info;
+    const card = $("releaseNotesCard");
+    const versionTag = $("releaseVersionTag");
+    const content = $("releaseNotesContent");
+    if (card && versionTag && content) {
+      versionTag.textContent = `v${info.latestVersion || info.version || "1.0.0"}`;
+      content.innerHTML = formatReleaseNotes(info.releaseNotes || info.body);
+      const getBtn = $("btnGetReleaseZip");
+      if (getBtn && info.releaseUrl) {
+        getBtn.href = info.releaseUrl;
+      }
+      card.style.display = "flex";
+    }
+  }
+
+  function initUpdateChecker() {
+    const manifestVer = chrome.runtime.getManifest().version;
+    const statusLbl = $("updateStatusText");
+    if (statusLbl) {
+      statusLbl.textContent = `v${manifestVer}`;
+      statusLbl.style.cursor = "pointer";
+      statusLbl.title = "Click to view release highlights";
+      statusLbl.addEventListener("click", () => {
+        if (lastReleaseInfo) {
+          showReleaseNotesPopup(lastReleaseInfo);
+        }
+      });
+    }
+
+    // Check cached update info
+    chrome.storage.local.get("extensionUpdateInfo", (res) => {
+      if (res.extensionUpdateInfo?.hasUpdate) {
+        showReleaseNotesPopup(res.extensionUpdateInfo);
+      }
+    });
+
+    // Real-time synchronization when shortcut is pressed on page
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local") {
+        if (changes.ytSkipEnabled && ytSkipToggle) {
+          ytSkipToggle.checked = Boolean(changes.ytSkipEnabled.newValue);
+          updateYtAdStatus();
+        }
+        if (changes.volumeEnabled && volumeToggle) {
+          volumeToggle.checked = Boolean(changes.volumeEnabled.newValue);
+        }
+        if (changes.speedEnabled && speedToggle) {
+          speedToggle.checked = Boolean(changes.speedEnabled.newValue);
+        }
+        if (changes.extensionUpdateInfo) {
+          const info = changes.extensionUpdateInfo.newValue;
+          if (info?.hasUpdate) {
+            showReleaseNotesPopup(info);
+          }
+        }
+      }
+    });
+
+    const closeNotes = () => {
+      const card = $("releaseNotesCard");
+      if (card) card.style.display = "none";
+    };
+    const btnClose = $("btnCloseReleaseNotes");
+    const btnDismiss = $("btnDismissNotes");
+    if (btnClose) btnClose.addEventListener("click", closeNotes);
+    if (btnDismiss) btnDismiss.addEventListener("click", closeNotes);
+
+    const btnCheck = $("btnCheckUpdate");
+    const btnText = $("checkUpdateText");
+    if (btnCheck) {
+      btnCheck.addEventListener("click", () => {
+        btnCheck.disabled = true;
+        if (btnText) btnText.textContent = "Checking...";
+        if (statusLbl) {
+          statusLbl.textContent = "Checking GitHub...";
+          statusLbl.style.color = "var(--text-muted)";
+        }
+
+        chrome.runtime.sendMessage({ target: "background", action: "checkForUpdates" }, (res) => {
+          btnCheck.disabled = false;
+          if (btnText) btnText.textContent = "Check for Updates";
+
+          if (chrome.runtime.lastError || res?.error) {
+            if (statusLbl) {
+              statusLbl.textContent = res?.error || "Check failed";
+              statusLbl.style.color = "var(--amber)";
+            }
+            return;
+          }
+
+          if (res?.hasUpdate) {
+            showReleaseNotesPopup(res);
+            if (statusLbl) {
+              statusLbl.textContent = `v${res.latestVersion} ready (Run update.bat)`;
+              statusLbl.style.color = "var(--green)";
+            }
+          } else {
+            if (statusLbl) {
+              statusLbl.textContent = `Latest version (v${manifestVer})`;
+              statusLbl.style.color = "var(--green)";
+            }
+          }
+        });
+      });
+    }
+  }
 })();

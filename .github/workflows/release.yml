@@ -1,0 +1,41 @@
+name: Release Media Control Toolkit Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Extract Tag Version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Package Extension ZIP
+        run: |
+          zip -r media-control-toolkit.zip . \
+            -x "*.git*" \
+            -x ".github/*" \
+            -x "screenshots/*" \
+            -x "scratch/*" \
+            -x "*.zip"
+
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: media-control-toolkit.zip
+          name: "Media Control Toolkit v${{ steps.get_version.outputs.VERSION }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
